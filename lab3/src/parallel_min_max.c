@@ -99,40 +99,37 @@ int main(int argc, char **argv) {
   int *array = malloc(sizeof(int) * array_size);
   GenerateArray(array, array_size, seed);
   int active_child_processes = 0;
-
-
-    int pipefd[2];
-    pid_t cpid;
-    if (pipe(pipefd) == -1) {
-        perror("pipe");
-        exit(EXIT_FAILURE);
-    }
-
+  int pipefd[2];
+  pid_t cpid;
+  if (pipe(pipefd) == -1) {
+      perror("pipe");
+      exit(EXIT_FAILURE);
+  }
   struct MinMax min_max_pnum;
   int part_pnum = array_size/pnum;
-
   struct timeval start_time;
   gettimeofday(&start_time, NULL);
 
   for (int i = 0; i < pnum; i++) {
-    pid_t child_pid = fork();
-    if (child_pid >= 0) {
+    cpid = fork();
+    if (cpid >= 0) {
       // successful fork
       active_child_processes += 1;
-      if (child_pid == 0) {
+      if (cpid == 0) {
         // child process
 
         // parallel somehow
         min_max_pnum = GetMinMax(array, i * part_pnum, (i == pnum - 1) ? array_size : (i + 1) * part_pnum);
         if (with_files) {
           // use files here
-          FILE* outFile = fopen("min_max_out.txt", "a");
+          FILE* outFile = fopen("out", "a");
           fwrite(&min_max_pnum, sizeof(struct MinMax), 1, outFile);
           fclose(outFile);
         } else {
           // use pipe here
           write(pipefd[1], &min_max_pnum, sizeof(struct MinMax));
         }
+        exit(1);
         return 0;
       }
 
@@ -159,7 +156,7 @@ int main(int argc, char **argv) {
 
     if (with_files) {
       // read from files
-        FILE* outFile = fopen("min_max_out.txt", "rb");
+        FILE* outFile = fopen("out", "rb");
         fseek(outFile, i*sizeof(struct MinMax), SEEK_SET);
         fread(&min_max_pnum, sizeof(struct MinMax), 1, outFile);
         fclose(outFile);
