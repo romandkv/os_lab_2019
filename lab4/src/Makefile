@@ -1,32 +1,54 @@
-CC=gcc
-CFLAGS=-I.
+CC = gcc
+INCLUDES := -I .
 
+# When the work is done add the flags
+CFLAGS := -Wall -Wextra -Werror -std=c99
 
-all : process_memory parallel_min_max parallel_sum zombie
+# task2
+SRC_ZOMBIES = zombies.c
+OBJ_ZOMBIES = $(patsubst %.c, %.o, $(SRC_ZOMBIES))
+# task3
+SRC_PROCMEM = process_memory.c
+OBJ_PROCMEM = $(patsubst %.c, %.o, $(SRC_PROCMEM))
 
-parallel_min_max : utils.o find_min_max.o utils.h find_min_max.h parallel_min_max.o
-	$(CC) -o parallel_min_max utils.o find_min_max.o parallel_min_max.o
+# task5
+SRC_PTHREADS = parallel_sum.c
+OBJ_PTHREADS = $(patsubst %.c, %.o, $(SRC_PTHREADS))
 
-process_memory : process_memory.c 
-	$(CC) -o process_memory process_memory.c
+LIB_DIR = lib4/
+LIB = $(LIB_DIR)lib4.a
+LIB_HEADERS = -I $(LIB_DIR)includes/
+LIB_FLAG := -L./$(LIB_DIR) -l4
 
-parallel_sum : utils.o utils.h parallel_sum.o
-	$(CC) -o parallel_sum -lpthread utils.o parallel_sum.o
+all: zombies process_memory parallel_sum
 
-zombie : 
-	$(CC) -o zombie zombie.c $(CFLAGS)
+zombies: $(SRC_ZOMBIES) $(OBJ_ZOMBIES)
+	$(CC) $(CFLAGS) $(OBJ_ZOMBIES) $(INCLUDES) -o zombies
 
-utils.o : utils.h
-	$(CC) -o utils.o -c -std=c99 utils.c $(CFLAGS)
+process_memory: $(SRC_PROCMEM)
+	$(CC) -c $(SRC_PROCMEM)
+	$(CC) $(OBJ_PROCMEM) $(INCLUDES) -o process_memory
 
-find_min_max.o : utils.h find_min_max.h
-	$(CC) -o find_min_max.o -c -std=c99 find_min_max.c $(CFLAGS)
+parallel_sum: $(LIB) $(SRC_PTHREADS)
+	$(CC) $(CFLAGS) $(LIB_HEADERS)  -c $(SRC_PTHREADS)
+	$(CC) $(CFLAGS) $(OBJ_PTHREADS) $(INCLUDES) $(LIB_HEADERS) $(LIB_FLAG) -pthread -o parallel_sum
 
-parallel_min_max.o :  utils.h find_min_max.h
-	$(CC) -o parallel_min_max.o -c -std=c99 parallel_min_max.c $(CFLAGS)
+$(LIB):
+	make -sC $(LIB_DIR)
 
-parallel_sum.o : utils.h
-	$(CC) -o parallel_sum.o -c -std=c99 parallel_sum.c $(CFLAGS)
+%.o : %.c $(INCLUDES)
+	$(CC) $(CFLAGS) -c $< $(INCLUDES)
 
-clean :
-	rm utils.o find_min_max.o parallel_min_max.o parallel_sum.o parallel_min_max process_memory parallel_sum zombie
+clean:
+	rm -f $(OBJ_ZOMBIES)
+	rm -f $(OBJ_PROCMEM)
+	make -sC $(LIB_DIR) clean
+	rm -f $(OBJ_PTHREADS)
+
+fclean: clean
+	rm -f zombies
+	rm -f process_memory
+	make -sC $(LIB_DIR) fclean
+	rm -f parallel_sum
+
+re: fclean all

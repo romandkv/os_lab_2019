@@ -11,15 +11,24 @@
 #include <sys/wait.h>
 
 #include <getopt.h>
+#include <errno.h>
 
 #include "find_min_max.h"
 #include "utils.h"
+
+void KillChild(int signum){
+
+    kill(-1, SIGKILL);
+    printf ("processes were successfully killed");
+}
+
 
 int main(int argc, char **argv) {
   int seed = -1;
   int array_size = -1;
   int pnum = -1;
   bool with_files = false;
+  int time_out = -1;
 
   while (true) {
     int current_optind = optind ? optind : 1;
@@ -28,6 +37,7 @@ int main(int argc, char **argv) {
                                       {"array_size", required_argument, 0, 0},
                                       {"pnum", required_argument, 0, 0},
                                       {"by_files", no_argument, 0, 'f'},
+                                      {"timeout", required_argument, 0, 0},
                                       {0, 0, 0, 0}};
 
     int option_index = 0;
@@ -40,30 +50,37 @@ int main(int argc, char **argv) {
         switch (option_index) {
           case 0:
             seed = atoi(optarg);
-            if (seed <= 0) {
-                printf("seed > 0\n");
-                return 1;
-            }
+              if (seed <= 0) {
+                printf("seed is a positive number\n");
+                 return 1;
+                }
             break;
           case 1:
             array_size = atoi(optarg);
-            if (array_size <= 0) {
-                printf("array_size > 0\n");
-                return 1;
-            }
+             if (array_size <= 0) {
+                printf("array_size is a positive number\n");
+                 return 1;
+                }
             break;
           case 2:
             pnum = atoi(optarg);
-            if (pnum <= 0) {
-                printf("pnum > 0\n");
-                return 1;
-            }
+             if (pnum <= 0) {
+                printf("pnum is a positive number\n");
+                 return 1;
+                }
             break;
           case 3:
             with_files = true;
             break;
+          case 4:
+            time_out = atoi(optarg);
+                if (time_out <= -1) {
+                    printf("timeout is a positive number\n");
+                    return 1;
+                }
+            break;
 
-          default:
+          defalut:
             printf("Index %d is out of options\n", option_index);
         }
         break;
@@ -96,10 +113,11 @@ int main(int argc, char **argv) {
 
   int pipefd[2];
   pid_t cpid;
-  if (pipe(pipefd) == -1) {
-    perror("pipe");
-    exit(EXIT_FAILURE);
-  }
+   if (pipe(pipefd) == -1) {
+               perror("pipe");
+               exit(EXIT_FAILURE);
+    }
+
   struct MinMax min_max_pnum;
   int part_pnum = array_size/pnum;
   struct timeval start_time;
@@ -114,8 +132,9 @@ int main(int argc, char **argv) {
         // child process
 
         min_max_pnum = GetMinMax(array, i*part_pnum, (i == pnum - 1) ? array_size : (i + 1)*part_pnum);
+
         if (with_files) {
-          FILE* outFile = fopen("out", "a");
+          FILE* outFile = fopen("min_max_out.txt", "a");
           fwrite(&min_max_pnum, sizeof(struct MinMax), 1, outFile);
           fclose(outFile);
         } else {
@@ -130,10 +149,27 @@ int main(int argc, char **argv) {
     }
   }
 
+  if (time_out > 0){ 
+        signal (SIGALRM, KillChild);
+        alarm (time_out);
+    }
+
   while (active_child_processes > 0) {
-    //close(pipefd[1]);
-    wait(NULL);
-    active_child_processes -= 1;
+
+    close(pipefd[1]);
+
+    int wpid = waitpid(-1, NULL, WNOHANG);
+
+        if(wpid == -1)
+        {
+            if(errno == ECHILD) break;
+        }
+        else
+        {
+            active_child_processes -= 1;
+        }
+        printf("%d\n", active_child_processes);
+
   }
 
   struct MinMax min_max;
@@ -145,11 +181,10 @@ int main(int argc, char **argv) {
     int max = INT_MIN;
 
     if (with_files) {
-        FILE* out = fopen("out", "rb");
-
-        fseek(out, i*sizeof(struct MinMax), SEEK_SET);
-        fread(&min_max_pnum, sizeof(struct MinMax), 1, out);
-        fclose(out);
+        FILE* outFile = fopen("min_max_out.txt", "rb");
+        fseek(outFile, i*sizeof(struct MinMax), SEEK_SET);
+        fread(&min_max_pnum, sizeof(struct MinMax), 1, outFile);
+        fclose(outFile);
     } else {
         read(pipefd[0], &min_max_pnum, sizeof(struct MinMax));
     }
