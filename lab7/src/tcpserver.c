@@ -7,16 +7,22 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define SERV_PORT 10050
-#define BUFSIZE 100
 #define SADDR struct sockaddr
 
-int main() {
+int main(int argc, char **argv) {
   const size_t kSize = sizeof(struct sockaddr_in);
 
+
+    if (argc != 3) {
+        printf("USAGE: ./%s [serv_port] [buffsize]", argv[0]);
+        return 0;
+    }
+
+    int serv_port = atoi(argv[1]);
+    int buffsize = atoi(argv[2]);
   int lfd, cfd;
   int nread;
-  char buf[BUFSIZE];
+  char buf[buffsize];
   struct sockaddr_in servaddr;
   struct sockaddr_in cliaddr;
 
@@ -32,7 +38,7 @@ int main() {
   The htonl() function converts the 
   unsigned integer hostlong from host byte order to network byte order.
   */
-  servaddr.sin_port = htons(SERV_PORT);
+  servaddr.sin_port = htons(serv_port);
 
   if (bind(lfd, (SADDR *)&servaddr, kSize) < 0) {
       /*
@@ -66,7 +72,7 @@ int main() {
     }
     printf("connection established\n");
 
-    while ((nread = read(cfd, buf, BUFSIZE)) > 0) {
+    while ((nread = read(cfd, buf, buffsize)) > 0) {
       write(1, &buf, nread);
     }
 

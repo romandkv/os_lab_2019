@@ -20,8 +20,8 @@ int main(int argc, char **argv) {
   struct sockaddr_in servaddr;
   struct sockaddr_in cliaddr;
 
-  if (argc != 2) {
-    printf("usage: client <IPaddress of server>\n");
+  if (argc != 4) {
+    printf("usage: client <IPaddress of server> [serv_port] [buffsize]\n");
     exit(1);
   }
 
