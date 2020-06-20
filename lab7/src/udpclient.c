@@ -42,11 +42,35 @@ int main(int argc, char **argv) {
 
   while ((n = read(0, sendline, BUFSIZE)) > 0) {
     if (sendto(sockfd, sendline, n, 0, (SADDR *)&servaddr, SLEN) == -1) {
+        /*
+        The system calls send(), sendto(), 
+        and sendmsg() are used to transmit a message to another socket.
+        socket
+        Specifies the socket file descriptor.
+        message
+        Points to a buffer containing the message to be sent.
+        length
+        Specifies the size of the message in bytes.
+        flags
+        Specifies the type of message transmission. Values of this argument are formed by logically OR'ing zero or more of the following flags:
+        MSG_EOR
+        Terminates a record (if supported by the protocol).
+        MSG_OOB
+        Sends out-of-band data on sockets that support out-of-band data. The significance and semantics of out-of-band data are protocol-specific.
+        dest_addr
+        Points to a sockaddr structure containing the destination address. The length and format of the address depend on the address family of the socket.
+        dest_len
+        Specifies the length of the sockaddr structure pointed to by the dest_addr argument.
+        */
       perror("sendto problem");
       exit(1);
     }
 
     if (recvfrom(sockfd, recvline, BUFSIZE, 0, NULL, NULL) == -1) {
+        /*
+        ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+                 struct sockaddr *src_addr, socklen_t *addrlen);
+        */
       perror("recvfrom problem");
       exit(1);
     }

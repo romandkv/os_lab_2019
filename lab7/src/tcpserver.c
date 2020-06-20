@@ -28,14 +28,27 @@ int main() {
   memset(&servaddr, 0, kSize);
   servaddr.sin_family = AF_INET;
   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+  /*
+  The htonl() function converts the 
+  unsigned integer hostlong from host byte order to network byte order.
+  */
   servaddr.sin_port = htons(SERV_PORT);
 
   if (bind(lfd, (SADDR *)&servaddr, kSize) < 0) {
+      /*
+        bind - bind a name to a socket
+        (int sockfd, const struct sockaddr *addr,
+                socklen_t addrlen);
+      */
     perror("bind");
     exit(1);
   }
 
   if (listen(lfd, 5) < 0) {
+      /*
+       listen - listen for connections on a socket
+       int listen(int sockfd, int backlog);
+      */
     perror("listen");
     exit(1);
   }
@@ -44,6 +57,10 @@ int main() {
     unsigned int clilen = kSize;
 
     if ((cfd = accept(lfd, (SADDR *)&cliaddr, &clilen)) < 0) {
+        /*
+         accept, accept4 - accept a connection on a socket
+       int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+        */
       perror("accept");
       exit(1);
     }

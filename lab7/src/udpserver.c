@@ -47,6 +47,15 @@ int main() {
     printf("REQUEST %s      FROM %s : %d\n", mesg,
            inet_ntop(AF_INET, (void *)&cliaddr.sin_addr.s_addr, ipadr, 16),
            ntohs(cliaddr.sin_port));
+           /*
+                  inet_ntop - convert IPv4 and IPv6 addresses from binary to text form
+       const char *inet_ntop(int af, const void *src,
+                             char *dst, socklen_t size);
+
+            
+                The ntohs() function converts the
+                unsigned short integer netshort from network byte order to host byte order.
+           */
 
     if (sendto(sockfd, mesg, n, 0, (SADDR *)&cliaddr, len) < 0) {
       perror("sendto");
